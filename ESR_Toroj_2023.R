@@ -1,6 +1,6 @@
 ############## DIRECTORY, LIBRARIES, SETTINGS ################################################
 
-setwd("C:/Andrzej/OneDrive - SGH/regio_leontief/2019_Sonata/ESR_replication_pack_online/")
+setwd("C:/Andrzej/OneDrive - SGH/regio_leontief/2019_Sonata/ESR_replication_pack/")
 
 if(!require("xlsx")) {install.packages("xlsx"); library(xlsx)}
 if(!require("mvtnorm")) {install.packages("mvtnorm"); library(mvtnorm)}
@@ -22,12 +22,12 @@ cat("\014")
 
 mode <- "base"
 h_value <- 0.4 #sensit: 0.3, 0.5
-drivetime <- TRUE
+drivetime <- FALSE
 if (h_value != 0.4) {mode <- paste0("h", gsub("\\.", "" , as.character(h_value)))}
 if (drivetime == TRUE) {mode <- "t"}
-country <- "PL"  # "PL", "KO", "JP"
+country <- "KO"  # "PL", "KO"
 estimation <- FALSE #if FALSE, previous estimation results are loaded
-useDatarino <- TRUE
+useDatarino <- FALSE
 
 #Load functions
 source("ESR_Toroj_2023_functions.R")
@@ -502,22 +502,25 @@ if (country == "KO") {
   #here estimate gravity model for JP
   load("javaerror.RData")
   tblsrcv <- "Icio" #"Jp" # "Icio"
-  x_SR_JP <- xlsx::read.xlsx(file = "JP.xlsx", 
-                             sheetName = "table", 
-                             colIndex = 1:658,
-                             rowIndex = 1:576,
-                             stringsAsFactors = FALSE, 
-                             header = FALSE, 
-                             encoding = "UTF-8")
-  if (tblsrcv == "Icio") {x_SR_JP <- load("icio.RData"); x_SR_JP <- x_SR_JP[,-1]}
-  #read.csv("ICIO.csv", header = TRUE, sep = ",", dec = ".")
-  x_SR_JP_row <- xlsx::read.xlsx(file = "JP.xlsx", 
-                                 sheetName = "rowHeader", 
-                                 colIndex = 1:4,
-                                 rowIndex = 1:577,
-                                 stringsAsFactors = FALSE, 
-                                 header = TRUE, 
-                                 encoding = "UTF-8")
+  if (tblsrcv == "Jp") {
+    x_SR_JP <- xlsx::read.xlsx(file = "JP.xlsx", 
+                               sheetName = "table", 
+                               colIndex = 1:658,
+                               rowIndex = 1:576,
+                               stringsAsFactors = FALSE, 
+                               header = FALSE, 
+                               encoding = "UTF-8")
+  }
+  if (tblsrcv == "Icio") {x_SR_JP <- read.csv("ICIO.csv", header = TRUE, sep = ",", dec = "."); x_SR_JP <- x_SR_JP[,-1]}
+  if (tblsrcv == "Jp") {
+    x_SR_JP_row <- xlsx::read.xlsx(file = "JP.xlsx", 
+                                   sheetName = "rowHeader", 
+                                   colIndex = 1:4,
+                                   rowIndex = 1:577,
+                                   stringsAsFactors = FALSE, 
+                                   header = TRUE, 
+                                   encoding = "UTF-8")
+  }
   if (tblsrcv == "Icio") {
     x_SR_JP_row <- xlsx::read.xlsx(file = "ICIO.xlsx", 
                                    sheetName = "rowHeader", 
@@ -531,13 +534,15 @@ if (country == "KO") {
   #close RStudio, then re-run the preamble 1-20 and continue below
   
   load("javaerror.RData")
-  x_SR_JP_col <- xlsx::read.xlsx(file = "JP.xlsx", 
-                                 sheetName = "colHeader", 
-                                 colIndex = 1:4,
-                                 rowIndex = 1:659,
-                                 stringsAsFactors = FALSE, 
-                                 header = TRUE, 
-                                 encoding = "UTF-8")
+  if (tblsrcv == "Jp") {
+    x_SR_JP_col <- xlsx::read.xlsx(file = "JP.xlsx", 
+                                   sheetName = "colHeader", 
+                                   colIndex = 1:4,
+                                   rowIndex = 1:659,
+                                   stringsAsFactors = FALSE, 
+                                   header = TRUE, 
+                                   encoding = "UTF-8")
+  }
   if (tblsrcv == "Icio") {
     x_SR_JP_col <- xlsx::read.xlsx(file = "ICIO.xlsx", 
                                    sheetName = "colHeader", 
@@ -548,16 +553,18 @@ if (country == "KO") {
                                    encoding = "UTF-8")
   }
   
-  row.filter <- x_SR_JP_row$Region.Code..Row. %in% 1:9 &
+  if (tblsrcv == "Jp") {
+    row.filter <- x_SR_JP_row$Region.Code..Row. %in% 1:9 &
                 x_SR_JP_row$Sector.Code..Row. %in% seq(10,530, by=10)
-  col.filter <- x_SR_JP_col$Region.Code..Column. %in% 1:9 &
-                x_SR_JP_col$Sector.Code..Column. %in% seq(10,530, by=10)
-  x_SR_JP <- x_SR_JP[row.filter,]
-  X_R_JP <- x_SR_JP[,ncol(x_SR_JP)]
-  x_SR_JP <- x_SR_JP[,col.filter] 
-  x_SR_JP_header <- x_SR_JP_row[row.filter,]
-  colnames(x_SR_JP_header) <- c("region_code", "region_name", "sector_code", "sector_name")
-  rm(x_SR_JP_row, x_SR_JP_col, col.filter, row.filter)
+    col.filter <- x_SR_JP_col$Region.Code..Column. %in% 1:9 &
+                  x_SR_JP_col$Sector.Code..Column. %in% seq(10,530, by=10)
+    x_SR_JP <- x_SR_JP[row.filter,]
+    X_R_JP <- x_SR_JP[,ncol(x_SR_JP)]
+    x_SR_JP <- x_SR_JP[,col.filter] 
+    x_SR_JP_header <- x_SR_JP_row[row.filter,]
+    colnames(x_SR_JP_header) <- c("region_code", "region_name", "sector_code", "sector_name")
+    rm(x_SR_JP_row, x_SR_JP_col, col.filter, row.filter)
+  }
   if (tblsrcv == "Icio") {
     X_R_JP <- x_SR_JP[1:3465,3543]
     x_SR_JP <- x_SR_JP[1:3465,1:3465]
@@ -593,35 +600,39 @@ if (country == "KO") {
   flows_JP <- merge(x=flows_JP, y=X_JP[,3:4], by.x="dest", by.y="region_sector",
                     sort = FALSE, all = TRUE)
   colnames(flows_JP)[10] <- "dest_X"
-  flows_JP <- flows_JP[flows_JP$source_region != flows_JP$dest_region, ]
+  if (tblsrcv == "Jp") {
+    flows_JP <- flows_JP[flows_JP$source_region != flows_JP$dest_region, ]
+  }
   if (tblsrcv == "Icio") {
     flows_JP <- flows_JP[flows_JP$source_region != "ROW" & flows_JP$dest_region != "ROW", ]
   }
   
   #dist
-  map_JP <- read_sf("jpn_adm_2019_shp", "jpn_admbnda_adm1_2019")
-  map_JP <- st_transform(map_JP, "+proj=longlat")
-  names_R_JP <- unique(x_SR_JP_header$region_name)
-  names_R_JP_map <- c("Hokkaido", "Miyagi", "Tokyo", "Aichi", "Osaka", "Hiroshima", "Ehime", "Fukuoka", "Okinawa")
-  names_R_JP <- data.frame(names_IO = names_R_JP, names_map = names_R_JP_map, region_code = 1:9)
-  map_JP$ADM1_EN <- substr(map_JP$ADM1_EN, 2, nchar(map_JP$ADM1_EN))
-  map_JP <- merge(x=map_JP, y=names_R_JP, by.x="ADM1_EN", by.y="names_map")
-  map_JP <- map_JP[order(map_JP$region_code),]
-  centroids <- st_centroid(map_JP$geometry)
-  dist_JP <- st_distance(centroids)
-  units(dist_JP) <- "km"
-  dist_JP <- matrix(dist_JP, nrow = nrow(names_R_JP))
-  rm(map_JP, centroids)
-  adj_JP <- matrix(0, nrow = nrow(names_R_JP), ncol = nrow(names_R_JP))
-  adj_JP[2,3] <- 1; adj_JP[3,2] <- 1
-  adj_JP[2,4] <- 1; adj_JP[4,2] <- 1
-  adj_JP[3,4] <- 1; adj_JP[4,3] <- 1
-  adj_JP[4,5] <- 1; adj_JP[5,4] <- 1
-  adj_JP[5,6] <- 1; adj_JP[6,5] <- 1
-  dist_JP <- cbind(names_R_JP[,c(1,3)], dist_JP)
-  colnames(dist_JP)[3:11] <- paste0("r_", names_R_JP$region_code)
-  adj_JP <- cbind(names_R_JP[,c(1,3)], adj_JP)
-  colnames(adj_JP)[3:11] <- paste0("r_", names_R_JP$region_code)
+  if (tblsrcv == "Jp") {
+    map_JP <- read_sf("jpn_adm_2019_shp", "jpn_admbnda_adm1_2019")
+    map_JP <- st_transform(map_JP, "+proj=longlat")
+    names_R_JP <- unique(x_SR_JP_header$region_name)
+    names_R_JP_map <- c("Hokkaido", "Miyagi", "Tokyo", "Aichi", "Osaka", "Hiroshima", "Ehime", "Fukuoka", "Okinawa")
+    names_R_JP <- data.frame(names_IO = names_R_JP, names_map = names_R_JP_map, region_code = 1:9)
+    map_JP$ADM1_EN <- substr(map_JP$ADM1_EN, 2, nchar(map_JP$ADM1_EN))
+    map_JP <- merge(x=map_JP, y=names_R_JP, by.x="ADM1_EN", by.y="names_map")
+    map_JP <- map_JP[order(map_JP$region_code),]
+    centroids <- st_centroid(map_JP$geometry)
+    dist_JP <- st_distance(centroids)
+    units(dist_JP) <- "km"
+    dist_JP <- matrix(dist_JP, nrow = nrow(names_R_JP))
+    rm(map_JP, centroids)
+    adj_JP <- matrix(0, nrow = nrow(names_R_JP), ncol = nrow(names_R_JP))
+    adj_JP[2,3] <- 1; adj_JP[3,2] <- 1
+    adj_JP[2,4] <- 1; adj_JP[4,2] <- 1
+    adj_JP[3,4] <- 1; adj_JP[4,3] <- 1
+    adj_JP[4,5] <- 1; adj_JP[5,4] <- 1
+    adj_JP[5,6] <- 1; adj_JP[6,5] <- 1
+    dist_JP <- cbind(names_R_JP[,c(1,3)], dist_JP)
+    colnames(dist_JP)[3:11] <- paste0("r_", names_R_JP$region_code)
+    adj_JP <- cbind(names_R_JP[,c(1,3)], adj_JP)
+    colnames(adj_JP)[3:11] <- paste0("r_", names_R_JP$region_code)
+  }
   if (tblsrcv == "Icio") {
     map_JP <- read_sf("world", "world-administrative-boundaries")
     map_JP <- st_transform(map_JP, "+proj=longlat")
@@ -646,23 +657,25 @@ if (country == "KO") {
     colnames(adj_JP) <- c("region_code", paste0("r_", names_R_JP))
   }
   
-  dist_JP <- melt(data = dist_JP, 
-                   id.vars = c("names_IO", "region_code"),
-                   variable.name = "region_code_2",
-                   value.name = "distance")
-  aux <- colsplit(as.character(dist_JP$region_code_2), "_", c("r", "region_code_2"))
-  dist_JP$region_code_2 <- aux$region_code_2
-  dist_JP$source_dest <- paste0(dist_JP$region_code, "_", dist_JP$region_code_2)
-  adj_JP <- melt(data = adj_JP, 
-                  id.vars = c("names_IO", "region_code"),
-                  variable.name = "region_code_2",
-                  value.name = "adjacency")
-  aux <- colsplit(as.character(adj_JP$region_code_2), "_", c("r", "region_code_2"))
-  adj_JP$region_code_2 <- aux$region_code_2
-  adj_JP$source_dest <- paste0(adj_JP$region_code, "_", adj_JP$region_code_2)
-  rm(aux)
-  adj_JP <- adj_JP[,4:5]
-  dist_JP <- dist_JP[,4:5]
+  if (tblsrcv == "Jp") {
+    dist_JP <- melt(data = dist_JP, 
+                     id.vars = c("names_IO", "region_code"),
+                     variable.name = "region_code_2",
+                     value.name = "distance")
+    aux <- colsplit(as.character(dist_JP$region_code_2), "_", c("r", "region_code_2"))
+    dist_JP$region_code_2 <- aux$region_code_2
+    dist_JP$source_dest <- paste0(dist_JP$region_code, "_", dist_JP$region_code_2)
+    adj_JP <- melt(data = adj_JP, 
+                    id.vars = c("names_IO", "region_code"),
+                    variable.name = "region_code_2",
+                    value.name = "adjacency")
+    aux <- colsplit(as.character(adj_JP$region_code_2), "_", c("r", "region_code_2"))
+    adj_JP$region_code_2 <- aux$region_code_2
+    adj_JP$source_dest <- paste0(adj_JP$region_code, "_", adj_JP$region_code_2)
+    rm(aux)
+    adj_JP <- adj_JP[,4:5]
+    dist_JP <- dist_JP[,4:5]
+  }
   
   if (tblsrcv == "Icio") {
     dist_JP <- melt(data = dist_JP, 
@@ -690,13 +703,15 @@ if (country == "KO") {
   flows_JP <- merge(x = flows_JP, y = dist_JP, by = "source_dest", all.x = TRUE)
   flows_JP <- flows_JP[flows_JP$source_X != 0 & flows_JP$dest_X != 0,]
   
-  mapping <- xlsx::read.xlsx(file = "JP.xlsx", 
-                                 sheetName = "mapping", 
-                                 colIndex = 1:3,
-                                 rowIndex = 1:54,
-                                 stringsAsFactors = FALSE, 
-                                 header = TRUE, 
-                                 encoding = "UTF-8")[,c(1,3)]
+  if (tblsrcv == "Jp") {
+    mapping <- xlsx::read.xlsx(file = "JP.xlsx", 
+                                   sheetName = "mapping", 
+                                   colIndex = 1:3,
+                                   rowIndex = 1:54,
+                                   stringsAsFactors = FALSE, 
+                                   header = TRUE, 
+                                   encoding = "UTF-8")[,c(1,3)]
+  }
   if (tblsrcv == "Icio") {
     mapping <- xlsx::read.xlsx(file = "ICIO.xlsx", 
                                sheetName = "mapping", 
