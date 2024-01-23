@@ -255,14 +255,23 @@ if (country == "PL") {
   rm(popul, tt)
 }
 if (country == "KO") {
-  sectors.yagg <- sectors_SR[,c("sector_code", "region", "Y")]
+  sectors.yagg <- sectors_SR[,c("sector_code", "region", "VA")]
   sectors.yagg <- merge(x = sectors.yagg, y = sectors.aggkey, by.x = "sector_code", by.y = "id")
-  sectors.yagg <- sectors.yagg[,c("code_S_reg", "region", "Y")]
-  sectors.yagg <- aggregate(sectors.yagg$Y, by = list(code_S_reg = sectors.yagg$code_S_reg, region = sectors.yagg$region), FUN = sum)
+  sectors.yagg <- sectors.yagg[,c("code_S_reg", "region", "VA")]
+  sectors.yagg <- aggregate(sectors.yagg$VA, by = list(code_S_reg = sectors.yagg$code_S_reg, region = sectors.yagg$region), FUN = sum)
   sectors.yagg$regord <- match(sectors.yagg$region, names_R)
   sectors.yagg <- sectors.yagg[order(sectors.yagg$code_S_reg, sectors.yagg$regord),]
+  
+  sectors.tbm <- sectors[,c("id", "Y", "VA")]
+  sectors.tbm <- merge(x = sectors.tbm, y = sectors.aggkey, by.x = "id", by.y = "id")
+  sectors.tbm <- aggregate(sectors.tbm[,c("VA", "Y")], by = list(code_S_reg = sectors.tbm$code_S_reg), FUN = sum)
+  
+  sectors.yagg <- merge(x = sectors.yagg, y = sectors.tbm, by = "code_S_reg", all.x = TRUE)
+  sectors.yagg$Yr <- sectors.yagg$x/sectors.yagg$VA * sectors.yagg$Y
+  
   y <- list()
-  y[[1]] <- as.matrix(sectors.yagg$x)
+  y[[1]] <- as.matrix(sectors.yagg$Yr)
+  rm(sectors.tbm)
 }
 
 #Create VA2: another version of VA vector consistent with regional data (and with additional time dimension)
